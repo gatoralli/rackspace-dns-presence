@@ -1,0 +1,76 @@
+#!/usr/bin/python
+
+import argparse
+import os
+import signal
+import sys
+import time
+
+import pyrax
+pyrax.settings.set('identity_type', 'rackspace')
+
+
+host_ip = os.environ.get('HOST_IP')
+username = os.environ.get('RACKSPACE_USERNAME')
+api_key = os.environ.get('RACKSPACE_API_KEY')
+domain_name = os.environ.get('DOMAIN_NAME')
+ttl = os.environ.get('RECORD_TTL') # in seconds
+
+parser = argparse.ArgumentParser(description='Register the local Rackspace \
+                                 instance in Cloud DNS')
+parser.add_argument('--host-ip', metavar='<HOST_IP>', default=host_ip)
+parser.add_argument('--domain', metavar='<DOMAIN_NAME>',
+                    default=domain_name,
+                    help='Name of domain to change')
+
+parser.add_argument('--username', metavar='<USERNAME>', default=username)
+parser.add_argument('--api-key', metavar='<API_KEY>', default=api_key)
+
+args = parser.parse_args()
+
+# Set up Rackspace connection
+pyrax.set_credentials(args.username, args.api_key)
+dns = pyrax.cloud_dns
+
+# Get the domain
+dom = None
+for domain in dns.get_domain_iterator():
+    if domain.name == args.domain:
+        dom = domain
+        break
+if not dom:
+    raise KeyError("Domain {} not found.".format(args.domain))
+
+# Register ip record with domain
+record = {
+    'type': 'A',
+    'name': args.domain,
+    'data': args.host_ip,
+    'ttl': ttl,
+}
+
+print "Registering ip {} to {} DNS".format(args.host_ip, args.domain)
+
+addedRecord = None
+for record in dom.list_records():
+    if record.name == args.domain:
+        addedRecord = record
+        break
+
+if addedRecord:
+    print "Record {} already exists. Moving on...".format(addedRecord)
+else:
+    addedRecord = dom.add_records([record])[0]
+    print "Successfully added record {}".format(addedRecord)
+
+def deregister_func():
+    print "Deregistering ip {} from {} DNS".format(args.host_ip, args.domain)
+    dom.delete_record(addedRecord)
+    print "Successfully deregistered record {}".format(addedRecord)
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, lambda signum, frame: deregister_func())
+signal.signal(signal.SIGINT, lambda signum, frame: deregister_func())
+
+while True:
+    time.sleep(5)
