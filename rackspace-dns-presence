@@ -10,11 +10,11 @@ import pyrax
 pyrax.settings.set('identity_type', 'rackspace')
 
 
-host_ip = os.environ.get('HOST_IP')
-username = os.environ.get('RACKSPACE_USERNAME')
-api_key = os.environ.get('RACKSPACE_API_KEY')
-domain_name = os.environ.get('DOMAIN_NAME')
-ttl = os.environ.get('RECORD_TTL') # in seconds
+host_ip = os.environ['HOST_IP']
+username = os.environ['RACKSPACE_USERNAME']
+api_key = os.environ['RACKSPACE_API_KEY']
+domain_name = os.environ['DOMAIN_NAME']
+ttl = os.environ.get('RECORD_TTL', 60 * 5) # in seconds
 
 parser = argparse.ArgumentParser(description='Register the local Rackspace \
                                  instance in Cloud DNS')
@@ -25,6 +25,7 @@ parser.add_argument('--domain', metavar='<DOMAIN_NAME>',
 
 parser.add_argument('--username', metavar='<USERNAME>', default=username)
 parser.add_argument('--api-key', metavar='<API_KEY>', default=api_key)
+parser.add_argument('--ttl', metavar='<TTL>', default=ttl)
 
 args = parser.parse_args()
 
@@ -46,15 +47,15 @@ record = {
     'type': 'A',
     'name': args.domain,
     'data': args.host_ip,
-    'ttl': ttl,
+    'ttl': args.ttl,
 }
 
 print "Registering ip {} to {} DNS".format(args.host_ip, args.domain)
 
 addedRecord = None
-for record in dom.list_records():
-    if record.name == args.domain and record.type == 'A':
-        addedRecord = record
+for r in dom.list_records():
+    if r.name == args.domain and r.data == args.host_ip and r.type == 'A':
+        addedRecord = r
         break
 
 if addedRecord:
