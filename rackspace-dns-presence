@@ -53,7 +53,7 @@ print "Registering ip {} to {} DNS".format(args.host_ip, args.domain)
 
 addedRecord = None
 for record in dom.list_records():
-    if record.name == args.domain:
+    if record.name == args.domain and record.type == 'A':
         addedRecord = record
         break
 
