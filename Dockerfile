@@ -1,4 +1,4 @@
-FROM phusion/baseimage
+FROM stackbrew/ubuntu:saucy
 
 RUN apt-get update
 RUN apt-get install -y python-pip
