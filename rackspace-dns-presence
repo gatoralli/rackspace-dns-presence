@@ -10,6 +10,7 @@ import pyrax
 pyrax.settings.set('identity_type', 'rackspace')
 
 
+name = os.environ['NAME']
 host_ip = os.environ['HOST_IP']
 username = os.environ['RACKSPACE_USERNAME']
 api_key = os.environ['RACKSPACE_API_KEY']
@@ -22,7 +23,7 @@ parser.add_argument('--host-ip', metavar='<HOST_IP>', default=host_ip)
 parser.add_argument('--domain', metavar='<DOMAIN_NAME>',
                     default=domain_name,
                     help='Name of domain to change')
-parser.add_argument('--name', metavar='<NAME>')
+parser.add_argument('--name', metavar='<NAME>', default=name)
 
 parser.add_argument('--username', metavar='<USERNAME>', default=username)
 parser.add_argument('--api-key', metavar='<API_KEY>', default=api_key)
